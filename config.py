@@ -1,5 +1,3 @@
-BOT_TOKEN = "8678475096:AAEH3VPBEGH4MbVQHsj_kImJaDRHHP6OmUM"
+BOT_TOKEN = "8678475096:AAH9zh88O0DX4LCV1jhLljH4J42yx7IZQno"
 
-# ADMIN_ID o'rniga ADMINS ro'yxatini yaratamiz:
-# 1-si do'stingizning ID raqami, 2-si o'zingizning ID raqamingiz.
 ADMINS = [957124681, 5633548272]
