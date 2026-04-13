@@ -19,8 +19,8 @@ def create_tables():
     conn = get_conn()
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS groups (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
-            nom          TEXT    NOT NULL,
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            nom      TEXT    NOT NULL,
             dars_kunlari TEXT    NOT NULL,
             vaqt         TEXT    NOT NULL
         );

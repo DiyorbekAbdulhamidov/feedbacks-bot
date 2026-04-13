@@ -28,12 +28,13 @@ TIME_RE  = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")   # HH:MM validatsiya
 
 
 # ==========================================
-#         ANTI-SPAM MIDDLEWARE
+#        ANTI-SPAM MIDDLEWARE (Tuzatildi)
 # ==========================================
 class AntiSpamMiddleware(BaseMiddleware):
     """Message va Callback uchun ham ishlaydi."""
 
-    def __init__(self, limit_seconds: float = 1.5):
+    # Limit 0.5 soniyaga tushirildi, qotib qolmasligi uchun
+    def __init__(self, limit_seconds: float = 0.5):
         self.limit      = limit_seconds
         self.users_time: dict[int, float] = {}
 
@@ -64,7 +65,7 @@ class AntiSpamMiddleware(BaseMiddleware):
 
 
 # ==========================================
-#               HOLATLAR
+#              HOLATLAR
 # ==========================================
 class RegState(StatesGroup):
     phone = State()
@@ -103,7 +104,7 @@ student_kb = ReplyKeyboardMarkup(
 
 
 # ==========================================
-#           YORDAMCHI FUNKSIYALAR
+#          YORDAMCHI FUNKSIYALAR
 # ==========================================
 def _days_kb(selected: list[str]) -> types.InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
@@ -123,7 +124,7 @@ async def _notify_admins(text: str):
 
 
 # ==========================================
-#             START KOMANDASI
+#            START KOMANDASI
 # ==========================================
 @dp.message(CommandStart())
 async def start_cmd(message: types.Message, state: FSMContext):
@@ -259,12 +260,10 @@ async def bc_group_id_selected(call: types.CallbackQuery, state: FSMContext):
 async def bc_final_send(message: types.Message, state: FSMContext):
     data = await state.get_data()
 
-    # Admin matn o'rniga rasm/stiker yuborsa — rad etish
     if not message.text:
         await message.answer("❌ Faqat matn xabar yuborish mumkin. Qaytadan yozing:")
         return
 
-    # target yo'q bo'lsa — xavfsiz qaytish
     target = data.get("target")
     if not target:
         await message.answer("❌ Xatolik. Qaytadan boshlang.", reply_markup=admin_kb)
@@ -364,7 +363,6 @@ async def admin_new_group(message: types.Message, state: FSMContext):
 
 @dp.message(AdminState.group_name)
 async def group_name_set(message: types.Message, state: FSMContext):
-    # Rasm/stiker yuborilsa message.text = None → AttributeError oldini olish
     name = (message.text or "").strip()
     if not name:
         await message.answer("❌ Nom matn bo'lishi kerak. Qaytadan kiriting:")
@@ -376,7 +374,7 @@ async def group_name_set(message: types.Message, state: FSMContext):
 
 @dp.callback_query(F.data.startswith("day_"), AdminState.group_days)
 async def toggle_day(call: types.CallbackQuery, state: FSMContext):
-    day  = call.data[4:]   # "day_" dan keyingi qism
+    day  = call.data[4:]
     data = await state.get_data()
     days: list = data.get("selected_days", [])
 
@@ -403,10 +401,8 @@ async def save_days(call: types.CallbackQuery, state: FSMContext):
 
 @dp.message(AdminState.group_time)
 async def group_time_set(message: types.Message, state: FSMContext):
-    # Rasm/stiker yuborilsa message.text = None → xavfsiz olish
     vaqt = (message.text or "").strip()
 
-    # ✅ Format validatsiyasi
     if not TIME_RE.match(vaqt):
         await message.answer(
             "❌ Noto'g'ri format! HH:MM ko'rinishida kiriting.\n"
@@ -438,7 +434,6 @@ async def reg_phone(message: types.Message, state: FSMContext):
 
 @dp.message(RegState.phone)
 async def reg_phone_wrong(message: types.Message):
-    """Foydalanuvchi kontakt o'rniga matn yuborganda."""
     await message.answer("📞 Iltimos, tugma orqali raqamingizni yuboring.")
 
 
@@ -468,6 +463,7 @@ async def reg_name(message: types.Message, state: FSMContext):
     await state.set_state(RegState.group)
 
 
+# === BUG TO'G'IRLANGAN QISM 👇 ===
 @dp.message(RegState.group, F.text.startswith("G: "))
 async def reg_final(message: types.Message, state: FSMContext):
     g_name = message.text[3:]   # "G: " dan keyingisi
@@ -479,10 +475,20 @@ async def reg_final(message: types.Message, state: FSMContext):
         return
 
     data = await state.get_data()
-    db.add_student(message.from_user.id, data["name"], data["phone"], g_id)
+    
+    # Xavfsiz get() ishlatildi. Xatolikning oldi olindi
+    name = data.get("name")
+    phone = data.get("phone")
+    
+    if not name or not phone:
+        await message.answer("⚠️ Sessiya muddati tugadi yoki xatolik yuz berdi. Iltimos, /start ni bosib qaytadan ro'yxatdan o'ting.", reply_markup=ReplyKeyboardRemove())
+        await state.clear()
+        return
+
+    db.add_student(message.from_user.id, name, phone, g_id)
     await message.answer(
         f"✅ Ro'yxatdan o'tdingiz!\n"
-        f"👤 {data['name']} | 👥 {g_name}",
+        f"👤 {name} | 👥 {g_name}",
         reply_markup=student_kb,
     )
     await state.clear()
@@ -530,7 +536,7 @@ async def check_timer():
 
 @dp.callback_query(F.data.startswith("r_"))
 async def rate_clicked(call: types.CallbackQuery, state: FSMContext):
-    parts = call.data.split("_")        # ["r", "val", "gid"]
+    parts = call.data.split("_")
     val   = parts[1]
     gid   = parts[2]
 
@@ -561,7 +567,6 @@ async def comment_received(message: types.Message, state: FSMContext):
     if gid:
         db.add_feedback(gid, int(rating), comment)
 
-    # Guruh nomini topish
     g_name = next(
         (g[1] for g in db.get_groups() if str(g[0]) == str(gid)),
         "Noma'lum",
@@ -582,13 +587,10 @@ async def comment_received(message: types.Message, state: FSMContext):
 # ==========================================
 @dp.message()
 async def all_msg(message: types.Message, state: FSMContext):
-    # Faol holat bo'lsa — bu handler ushlamasligi kerak,
-    # lekin ehtiyot uchun tekshiramiz
     current_state = await state.get_state()
     if current_state is not None:
         return
 
-    # Faqat ro'yxatdan o'tgan o'quvchilarning xabarlarini adminga yo'naltiramiz
     st = db.get_student(message.from_user.id)
     if st and message.from_user.id not in config.ADMINS:
         g_name = next(
@@ -613,7 +615,6 @@ async def all_msg(message: types.Message, state: FSMContext):
 async def main():
     db.create_tables()
 
-    # Middleware — ham message, ham callback uchun
     dp.message.middleware(AntiSpamMiddleware())
     dp.callback_query.middleware(AntiSpamMiddleware())
 
