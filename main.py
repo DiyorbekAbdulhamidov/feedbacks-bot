@@ -323,12 +323,30 @@ async def process_comment(message: types.Message, state: FSMContext):
 # ==========================================
 @dp.message()
 async def handle_all_messages(message: types.Message, state: FSMContext):
-    if message.text in ["➕ Yangi guruh yaratish", "📋 Guruhlarni ko'rish va Boshqarish", "🔄 Profilni va Guruhni o'zgartirish", "📢 E'lon yuborish"]: return
+    if message.text in ["➕ Yangi guruh yaratish", "📋 Guruhlarni ko'rish va Boshqarish", "🔄 Profilni va Guruhni o'zgartirish", "📢 E'lon yuborish", "➡️ Izohsiz yuborish"]: 
+        return
 
     student = db.get_student(message.from_user.id)
-    if not student and message.from_user.id not in config.ADMINS:
-        await message.answer("Siz ro'yxatdan o'tmagansiz. Iltimos, /start tugmasini bosing.")
-
+    if student:
+        # O'quvchi dars vaqtidan tashqarida shunchaki o'zi yozsa
+        group_id = student[3]
+        groups = db.get_groups()
+        group_name = next((g[1] for g in groups if g[0] == group_id), "Noma'lum guruh")
+        
+        # XATOLIK TUZATILDI: Bahoni '0' (yoki Noma'lum) qilib saqlaymiz
+        db.add_feedback(group_id, 0, message.text)
+        
+        admin_text = f"📩 <b>Yangi anonim fikr! (Darsdan tashqari)</b>\n\n👥 Guruh: {group_name}\n⭐️ Baho: Qo'yilmagan\n💬 Fikr: {message.text}"
+        for admin_id in config.ADMINS:
+            try:
+                await bot.send_message(admin_id, admin_text, parse_mode="HTML")
+            except:
+                pass
+                
+        await message.answer("✅ Xabaringiz o'qituvchiga anonim tarzda yetkazildi. Rahmat!")
+    else:
+        if message.from_user.id not in config.ADMINS:
+            await message.answer("Siz ro'yxatdan o'tmagansiz. Iltimos, /start tugmasini bosing.")
 # ==========================================
 #             ASOSIY FUNKSIYA
 # ==========================================
