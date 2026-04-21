@@ -26,7 +26,6 @@ TZ       = ZoneInfo("Asia/Tashkent")
 UZ_DAYS  = ["Dush", "Sesh", "Chor", "Pay", "Jum", "Shan", "Yak"]
 TIME_RE  = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")   # HH:MM validatsiya
 
-# 
 class AntiSpamMiddleware(BaseMiddleware):
     """Message va Callback uchun ham ishlaydi."""
 
