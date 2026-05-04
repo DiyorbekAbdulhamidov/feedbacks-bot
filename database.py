@@ -11,7 +11,7 @@ def get_conn() -> sqlite3.Connection:
         _conn.execute("PRAGMA journal_mode=WAL")       # parallel read/write
         _conn.execute("PRAGMA synchronous=NORMAL")     # tezroq flush
         _conn.execute("PRAGMA cache_size=-16000")      # 16 MB RAM cache
-        _conn.execute("PRAGMA temp_store=MEMORY")      # temp jadvallar RAMda
+        _conn.execute("PRAGMA temp_store=MEMORY")      
     return _conn
 
 
