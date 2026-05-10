@@ -14,7 +14,7 @@ def get_conn() -> sqlite3.Connection:
         _conn.execute("PRAGMA temp_store=MEMORY")      
     return _conn
 
-
+# 
 def create_tables():
     conn = get_conn()
     conn.executescript("""
