@@ -8,9 +8,9 @@ def get_conn() -> sqlite3.Connection:
     global _conn
     if _conn is None:
         _conn = sqlite3.connect("baza.db", check_same_thread=False)
-        _conn.execute("PRAGMA journal_mode=WAL")       # parallel read/write
-        _conn.execute("PRAGMA synchronous=NORMAL")     # tezroq flush
-        _conn.execute("PRAGMA cache_size=-16000")      # 16 MB RAM cache
+        _conn.execute("PRAGMA journal_mode=WAL")       
+        _conn.execute("PRAGMA synchronous=NORMAL")     
+        _conn.execute("PRAGMA cache_size=-16000")      
         _conn.execute("PRAGMA temp_store=MEMORY")      
     return _conn
 
