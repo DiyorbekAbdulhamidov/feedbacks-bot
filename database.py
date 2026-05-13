@@ -13,7 +13,7 @@ def get_conn() -> sqlite3.Connection:
         _conn.execute("PRAGMA cache_size=-16000")      
         _conn.execute("PRAGMA temp_store=MEMORY")      
     return _conn
-
+# 
 def create_tables():
     conn = get_conn()
     conn.executescript("""
